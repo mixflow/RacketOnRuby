@@ -41,8 +41,8 @@ class Racket
                 aux.call tokens, acc, left_parenthesis # recursive
             end
         end
-
-        aux.call tokens, [], nil # initial call helper
+        # initial call helper. copy tokens pass to 'aux', because tokens will be mutated in 'aux'
+        aux.call tokens[0..-1], [], nil
     end
 
     def atom(token)

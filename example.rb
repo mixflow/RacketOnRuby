@@ -28,7 +28,7 @@ str2 =
 }
 p r.generate_ast(r.tokenize(str2))
 
-str3 =
+fib_str =
 %{
 (define fibonacci
   (letrec ([memo null]
@@ -44,4 +44,7 @@ str3 =
                           new-ans)))))])
     f))
 }
-p r.generate_ast(r.tokenize(str3))
+fib_tokens = r.tokenize(fib_str)
+fib_ast = r.generate_ast(fib_tokens)
+puts "tokens:" + fib_tokens.to_s
+p fib_ast
