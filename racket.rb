@@ -61,4 +61,21 @@ class Racket
     def parse(str)
         generate_ast( tokenize(str) )
     end
+
+    def initialize()
+        @env = {
+            :+ => lambda{|x, y| x+y},
+            :* => lambda{|x, y| x*y}
+        }
+    end
+
+    def eval(exp, env=@env)
+        if exp.is_a? Numeric
+            exp # is a number(integer and float) return itself
+        elsif exp[0] == :+ or exp[0] == :*
+            env[ exp[0] ].call( eval(exp[1], env), eval(exp[2], env) )
+        else
+            exp.map { |subexp| eval(subexp, env) }
+        end
+    end
 end
