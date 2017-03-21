@@ -48,3 +48,6 @@ fib_tokens = r.tokenize(fib_str)
 fib_ast = r.generate_ast(fib_tokens)
 puts "tokens:" + fib_tokens.to_s
 p fib_ast
+
+simple_algebra = "(+ 2 (* 2 3))"
+p r.eval(r.parse(simple_algebra))
