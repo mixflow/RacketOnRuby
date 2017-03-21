@@ -46,7 +46,7 @@ class Racket
     end
 
     def atom(token)
-        str_part = token[/^(.*)$/, 1] # try match string(start and end with ")
+        str_part = token[/^"(.*)"$/, 1] # try match string(start and end with ")
         if not str_part.nil?
             str_part
         elsif token[/(?=(\.|[eE]))(\.\d+)?([eE][+-]?\d+)?$/]  # decimal
