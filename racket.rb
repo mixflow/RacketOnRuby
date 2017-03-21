@@ -75,7 +75,8 @@ class Racket
         elsif exp[0] == :+ or exp[0] == :*
             env[ exp[0] ].call( eval(exp[1], env), eval(exp[2], env) )
         else
-            exp.map { |subexp| eval(subexp, env) }
+            results = exp.map { |subexp| eval(subexp, env) }
+            results[-1]
         end
     end
 end
