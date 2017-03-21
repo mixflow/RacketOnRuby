@@ -57,4 +57,8 @@ class Racket
             token.to_sym
         end
     end
+
+    def parse(str)
+        generate_ast( tokenize(str) )
+    end
 end
