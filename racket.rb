@@ -62,11 +62,15 @@ class Racket
         generate_ast( tokenize(str) )
     end
 
+    ALGEBRA_OPERATORS = [:+, :-, :*, :/]
+
     def initialize()
         @env = {
-            :+ => lambda{|x, y| x+y},
-            :* => lambda{|x, y| x*y}
         }
+
+        ALGEBRA_OPERATORS.map do |opt|
+            @env[opt] = lambda{ |*operands| operands.inject(opt) }
+        end
     end
 
     def eval_expressions(exps, env=@env)
