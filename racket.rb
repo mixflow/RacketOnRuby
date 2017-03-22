@@ -66,6 +66,8 @@ class Racket
 
     def initialize()
         @env = {
+            :'#t' => true,
+            :'#f' => false
         }
 
         ALGEBRA_OPERATORS.map do |opt|
@@ -103,6 +105,13 @@ class Racket
                 raise "set! assignment disallowed. undefined: %s !" %  var
             else
                 env[var] = eval( new_val_exp, env )
+            end
+        elsif exp[0] == :if
+            _, test_exp, then_exp, else_exp = exp
+            if eval(test_exp, env) == false
+                eval( else_exp, env )
+            else # other than false(#f)
+                eval( then_exp, env)
             end
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
