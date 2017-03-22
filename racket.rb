@@ -93,7 +93,10 @@ class Racket
         if exp.is_a? Numeric
             exp # is a number(integer and float) return itself
         elsif exp.is_a? Symbol
-            lookup_env(env, exp)
+            lookup_env(env, exp) # look up var and return its value
+        elsif exp[0] == :define
+            _, var, value_exp = exp
+            env[var] = eval( value_exp, env )
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
