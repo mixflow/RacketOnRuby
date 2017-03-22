@@ -66,13 +66,27 @@ class Racket
     COMPARISION = [:==, :!=, :<, :>, :<=, :>=]
 
     def initialize()
+
         @env = {
             :'#t' => true,
             :'#f' => false,
             # Racket 'not' operator if exp is #f, results #t. otherwise false. it differents from ruby not
             :not => lambda { |exp| if false==exp then true else false end },
             :and => lambda { |*args| args.all? {|x| x == true} },
-            :or => lambda { |*args| args.any? {|x| x == true} }
+            :or => lambda { |*args| args.any? {|x| x == true} },
+            # cons cell, list
+            :null? => lambda { |exp| :null == exp },
+            :cons => lambda { |x, cell| [x, cell] },
+            :car => lambda { |cell| cell[0]},
+            :cdr => lambda { |cell| cell[1] },
+            :list => lambda do |*args|
+                racket_list_helper= lambda do |args|
+                    if args.empty? then :null
+                    else [args[0], racket_list_helper.call(args[1..-1])]
+                    end
+                end
+                racket_list_helper.call(args)
+            end
         }
 
         ALGEBRA_OPERATORS.map do |opt|
@@ -102,6 +116,8 @@ class Racket
 
         if exp.is_a? Numeric
             exp # is a number(integer and float) return itself
+        elsif exp == :null
+            exp
         elsif exp.is_a? Symbol
             lookup_env(env, exp) # look up var and return its value
         elsif exp[0] == :define
@@ -126,6 +142,10 @@ class Racket
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
             operator.call *operands
         end
+    end
+
+    def execute(str)
+        eval_expressions(parse(str))
     end
 
     def repl(prompt='RacketOnRb >>', output_prompt="=>")

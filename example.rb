@@ -57,5 +57,9 @@ if_str = "(if (> 1 2) (* 1 2) (- 4 9))"
 # p r.parse(if_str)
 p "should be -5, actual result: %s " % r.eval_expressions(r.parse(if_str))
 
+p list_lst1 = r.execute("(list 1 2 3)")
+p cons_lst1 = r.execute("(cons 1 (cons 2 (cons 3 null)))")
+p list_lst1 == cons_lst1
+p r.execute("(car (cdr (cdr (list 1 2 3))))") == 3
 # open REPL
 r.repl()
