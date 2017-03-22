@@ -53,5 +53,9 @@ simple_algebra = "(+ 1 (* 2 3))"
 p r.parse(simple_algebra)
 p " 1+(2*3) result: %s" % r.eval_expressions(r.parse(simple_algebra))
 
+if_str = "(if (> 1 2) (* 1 2) (- 4 9))"
+# p r.parse(if_str)
+p "should be -5, actual result: %s " % r.eval_expressions(r.parse(if_str))
+
 # open REPL
 r.repl()

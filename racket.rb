@@ -63,17 +63,23 @@ class Racket
     end
 
     ALGEBRA_OPERATORS = [:+, :-, :*, :/]
+    COMPARISION = [:==, :!=, :<, :>, :<=, :>=]
 
     def initialize()
         @env = {
             :'#t' => true,
             :'#f' => false,
             # Racket 'not' operator if exp is #f, results #t. otherwise false. it differents from ruby not
-            :not => lambda { |exp| if false==exp then true else false end }
+            :not => lambda { |exp| if false==exp then true else false end },
+            :and => lambda { |*args| args.all? {|x| x == true} },
+            :or => lambda { |*args| args.any? {|x| x == true} }
         }
 
         ALGEBRA_OPERATORS.map do |opt|
             @env[opt] = lambda{ |*operands| operands.inject(opt) }
+        end
+        COMPARISION.map do |opt|
+            @env[opt] = lambda{ |*args| args.each_cons(2).all? {|x, y| x.method(opt).call(y)} }
         end
     end
 
