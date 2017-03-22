@@ -80,7 +80,7 @@ class Racket
 
     def eval(exp, env=@env)
         def lookup_env(env, var)
-            error_no_var = "undefined: \"%s\"" % var
+            error_no_var = "undefined: %s !" % var
             val = env[var]
 
             if val.nil?
@@ -97,6 +97,13 @@ class Racket
         elsif exp[0] == :define
             _, var, value_exp = exp
             env[var] = eval( value_exp, env )
+        elsif exp[0] == :set!
+            _, var, new_val_exp = exp
+            if env[var].nil?
+                raise "set! assignment disallowed. undefined: %s !" %  var
+            else
+                env[var] = eval( new_val_exp, env )
+            end
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
