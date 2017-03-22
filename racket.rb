@@ -67,7 +67,9 @@ class Racket
     def initialize()
         @env = {
             :'#t' => true,
-            :'#f' => false
+            :'#f' => false,
+            # Racket 'not' operator if exp is #f, results #t. otherwise false. it differents from ruby not
+            :not => lambda { |exp| if false==exp then true else false end }
         }
 
         ALGEBRA_OPERATORS.map do |opt|
