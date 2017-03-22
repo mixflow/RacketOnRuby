@@ -50,4 +50,5 @@ puts "fibonacci tokens:" + fib_tokens.to_s
 p fib_ast
 
 simple_algebra = "(+ 1 (* 2 3))"
-p " 1+(2*3) result: %s" % r.eval(r.parse(simple_algebra))
+p r.parse(simple_algebra)
+p " 1+(2*3) result: %s" % r.eval_expressions(r.parse(simple_algebra))

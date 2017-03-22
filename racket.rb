@@ -69,14 +69,31 @@ class Racket
         }
     end
 
+    def eval_expressions(exps, env=@env)
+        results = exps.map { |one_exp| eval(one_exp, env) }
+        results[-1]
+    end
+
     def eval(exp, env=@env)
+        def lookup_env(env, var)
+            error_no_var = "undefined: \"%s\"" % var
+            val = env[var]
+
+            if val.nil?
+                raise error_no_var
+            else
+                return val
+            end
+        end
+
         if exp.is_a? Numeric
             exp # is a number(integer and float) return itself
-        elsif exp[0] == :+ or exp[0] == :*
-            env[ exp[0] ].call( eval(exp[1], env), eval(exp[2], env) )
+        elsif exp.is_a? Symbol
+            lookup_env(env, exp)
         else
-            results = exp.map { |subexp| eval(subexp, env) }
-            results[-1]
+            operator = eval(exp[0], env) # first thing of s-expression sequence.
+            operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
+            operator.call *operands
         end
     end
 end
