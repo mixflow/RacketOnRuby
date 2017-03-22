@@ -100,4 +100,19 @@ class Racket
             operator.call *operands
         end
     end
+
+    def repl(prompt='RacketOnRb >>', output_prompt="=>")
+        while true
+            print prompt
+            code = gets
+
+            begin
+                ast = parse(code)
+                result = eval_expressions(ast)
+                puts output_prompt + result.to_s
+            rescue Exception => e
+                puts e
+            end
+        end
+    end
 end
