@@ -61,5 +61,7 @@ p list_lst1 = r.execute("(list 1 2 3)")
 p cons_lst1 = r.execute("(cons 1 (cons 2 (cons 3 null)))")
 p list_lst1 == cons_lst1
 p r.execute("(car (cdr (cdr (list 1 2 3))))") == 3
+
+p r.execute('(assoc "1st" (list (cons "1st" 1) (cons "2nd" 2)))')
 # open REPL
 r.repl()

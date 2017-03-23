@@ -75,17 +75,36 @@ class Racket
             :and => lambda { |*args| args.all? {|x| x == true} },
             :or => lambda { |*args| args.any? {|x| x == true} },
             # cons cell, list
-            :null? => lambda { |exp| :null == exp },
+            :null? => lambda { |exp| :null == exp }, # racket empty list.
             :cons => lambda { |x, cell| [x, cell] },
             :car => lambda { |cell| cell[0]},
             :cdr => lambda { |cell| cell[1] },
             :list => lambda do |*args|
+                # racket code '(list 1 2 3)' is equivalent to '(cons 1 (cons 2 (cons 3 null)))'
                 racket_list_helper= lambda do |args|
                     if args.empty? then :null
                     else [args[0], racket_list_helper.call(args[1..-1])]
                     end
                 end
                 racket_list_helper.call(args)
+            end,
+
+            :assoc => lambda do |key, cell|
+                # find value based on key through list of some key-to-val pairs
+                # (assoc "1st" (list (cons "1st" 1) (cons "2nd" 2))) # result: (cons "1st" 1)
+                aux = lambda do |key, cell|
+                    if cell.empty?
+                        false # not found
+                    else
+                        map=cell[0]
+                        if key == map[0]
+                            map # return key, value pair
+                        else
+                            aux.call(key, cell[1])
+                        end
+                    end
+                end
+                aux.call(key, cell)
             end
         }
 
@@ -116,6 +135,8 @@ class Racket
 
         if exp.is_a? Numeric
             exp # is a number(integer and float) return itself
+        elsif exp.is_a? String
+            exp
         elsif exp == :null
             exp
         elsif exp.is_a? Symbol
