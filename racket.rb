@@ -224,7 +224,12 @@ class Racket
         eval_expressions(parse(str))
     end
 
-    def repl(prompt='RacketOnRb >>', output_prompt="=>")
+    def repl(options={})
+        # default values
+        prompt = options[:prompt] ||= "RacketOnRb >>"
+        output_prompt = options[:output_prompt] ||= "=>"
+        will_raise = options[:will_raise] ||= false
+
         while true
             print prompt
             code = gets
