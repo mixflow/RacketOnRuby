@@ -63,8 +63,9 @@ class Racket
     end
 
     ALGEBRA_OPERATORS = [:+, :-, :*, :/]
-    COMPARISION = [:==, :!=, :<, :>, :<=, :>=]
+    COMPARISION = [:'=', :<, :>, :<=, :>=]
 
+    attr_reader :env
     def initialize()
 
         @env = {
@@ -105,14 +106,22 @@ class Racket
                     end
                 end
                 aux.call(key, cell)
+            end,
+            :begin => lambda do |*args|
+                args[-1] # return last result.
             end
         }
 
         ALGEBRA_OPERATORS.map do |opt|
-            @env[opt] = lambda{ |*operands| operands.inject(opt) }
+            @env[opt] = lambda{ |*operands| operands; operands.inject(opt) }
         end
         COMPARISION.map do |opt|
-            @env[opt] = lambda{ |*args| args.each_cons(2).all? {|x, y| x.method(opt).call(y)} }
+            aux = lambda do |opt|
+                lambda{ |*args| args.each_cons(2).all? {|x, y| x.method(opt).call(y)} }
+            end
+            if opt == :'=' then @env[:'='] = aux.(:==)
+            else @env[opt] = aux.(opt)
+            end
         end
     end
 
