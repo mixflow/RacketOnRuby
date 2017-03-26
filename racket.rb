@@ -131,12 +131,15 @@ class Racket
     end
 
     def eval(exp, env=@env)
+        p exp
         def lookup_env(env, var)
             error_no_var = "undefined: %s !" % var
             val = env[var]
 
             if val.nil?
                 raise error_no_var
+            elsif val == :'*unassigned*'
+                raise "the unassigned value should not be access."
             else
                 return val
             end
@@ -148,11 +151,21 @@ class Racket
             exp
         elsif exp == :null
             exp
+        elsif exp == :'*unassigend*'
+            exp
         elsif exp.is_a? Symbol
+
             lookup_env(env, exp) # look up var and return its value
         elsif exp[0] == :define
             _, var, value_exp = exp
-            env[var] = eval( value_exp, env )
+            if var.is_a? Array # function define
+                fun_name = var[0]
+                parameter_names = var[1..-1]
+                env[fun_name] = eval([:closure, fun_name, parameter_names, value_exp], env)
+            else # variable
+                value = eval( value_exp, env )
+                env[var] = value
+            end
         elsif exp[0] == :set!
             _, var, new_val_exp = exp
             if env[var].nil?
@@ -167,6 +180,39 @@ class Racket
             else # other than false(#f)
                 eval( then_exp, env)
             end
+        elsif exp[0] == :rec
+            _, var, fun = exp
+            eval([:letrec, [[var, fun]], var], env)
+        elsif exp[0] == :closure
+            _, fun_name, parameter_names, fun_body = exp
+            env_define = env.clone # the environment when the function is defined
+            the_closure = lambda do |*arg_vals|
+                env_with_args = env_define.merge Hash[parameter_names.zip arg_vals]
+                env_with_args[fun_name] = the_closure if fun_name # bind function name in env
+                eval(fun_body, env_with_args)
+            end
+        elsif exp[0] == :lambda
+            _, parameter_names, fun_body = exp
+            eval([:closure, false, parameter_names, fun_body], env) # return closure( no function name )
+        elsif exp[0] == :let
+            _, bindings, body = exp
+            vars = [];vals = []
+            bindings.each do |bind|
+                vars.push(bind[0])
+                vals.push(bind[1])
+            end
+            p [[:lambda, vars, body]] + vals
+            eval([[:lambda, vars, body]] + vals, env)
+        elsif exp[0] == :letrec
+            _, bindings, body = exp
+            vars = []; val_exprs =[]
+            bindings.each do |bind|
+                vars.push(bind[0])
+                val_exprs.push(bind[1]) # no eval now
+            end
+            eval([:let, vars.map{|var| [var, :"*unassigned*"]}, # all vars' values are #f temp.
+                        [:begin].+(vars.map.with_index{|var,idx| [:set!, var, val_exprs[idx]]})
+                               .push(body)], env)
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
