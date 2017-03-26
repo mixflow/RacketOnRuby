@@ -94,7 +94,7 @@ class Racket
                 # find value based on key through list of some key-to-val pairs
                 # (assoc "1st" (list (cons "1st" 1) (cons "2nd" 2))) # result: (cons "1st" 1)
                 aux = lambda do |key, cell|
-                    if cell.empty?
+                    if cell == :null or cell.empty? # empty list
                         false # not found
                     else
                         map=cell[0]
