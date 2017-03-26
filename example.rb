@@ -57,11 +57,20 @@ if_str = "(if (> 1 2) (* 1 2) (- 4 9))"
 # p r.parse(if_str)
 p "should be -5, actual result: %s " % r.eval_expressions(r.parse(if_str))
 
+# test cons cells and list
 p list_lst1 = r.execute("(list 1 2 3)")
 p cons_lst1 = r.execute("(cons 1 (cons 2 (cons 3 null)))")
 p list_lst1 == cons_lst1
 p r.execute("(car (cdr (cdr (list 1 2 3))))") == 3
 
+# test 'assoc'
 p r.execute('(assoc "1st" (list (cons "1st" 1) (cons "2nd" 2)))')
+
+p "let test result(should be 2): %s" % r.execute("(let ([x 1] [y 2]) (* x y))")
+p "letrec test result(should be 4): %s" % r.execute("(letrec ([x 2] [y x]) (+ x y))")
+
+r.eval_expressions(fib_ast)
+p "fibonacci 10 result: %s" % r.execute('(fibonacci 10)')
 # open REPL
-r.repl()
+# r.repl()
+r
