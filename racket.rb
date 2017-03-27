@@ -190,9 +190,6 @@ class Racket
             else # other than false(#f)
                 eval( then_exp, env)
             end
-        elsif exp[0] == :rec
-            _, var, fun = exp
-            eval([:letrec, [[var, fun]], var], env)
         elsif exp[0] == :lambda
             _, parameter_names, fun_body = exp
             Closure.new(parameter_names, fun_body, env)
