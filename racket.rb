@@ -78,19 +78,19 @@ class Racket
     attr_reader :env
     def initialize()
 
-        @env = {
-            :'#t' => true,
-            :'#f' => false,
+        @env = [
+            [:'#t' ,  true],
+            [:'#f' ,  false],
             # Racket 'not' operator if exp is #f, results #t. otherwise false. it differents from ruby not
-            :not => lambda { |exp| if false==exp then true else false end },
-            :and => lambda { |*args| args.all? {|x| x == true} },
-            :or => lambda { |*args| args.any? {|x| x == true} },
+            [:not ,  lambda { |exp| if false==exp then true else false end }],
+            [:and ,  lambda { |*args| args.all? {|x| x == true} }],
+            [:or ,  lambda { |*args| args.any? {|x| x == true} }],
             # cons cell, list
-            :null? => lambda { |exp| :null == exp }, # racket empty list.
-            :cons => lambda { |x, cell| [x, cell] },
-            :car => lambda { |cell| cell[0]},
-            :cdr => lambda { |cell| cell[1] },
-            :list => lambda do |*args|
+            [:null? ,  lambda { |exp| :null == exp }], # racket empty list.
+            [:cons ,  lambda { |x, cell| [x, cell] }],
+            [:car ,  lambda { |cell| cell[0] }],
+            [:cdr ,  lambda { |cell| cell[1] }],
+            [:list , lambda do |*args|
                 # racket code '(list 1 2 3)' is equivalent to '(cons 1 (cons 2 (cons 3 null)))'
                 racket_list_helper= lambda do |args|
                     if args.empty? then :null
@@ -98,9 +98,9 @@ class Racket
                     end
                 end
                 racket_list_helper.call(args)
-            end,
+            end],
 
-            :assoc => lambda do |key, cell|
+            [:assoc , lambda do |key, cell|
                 # find value based on key through list of some key-to-val pairs
                 # (assoc "1st" (list (cons "1st" 1) (cons "2nd" 2))) # result: (cons "1st" 1)
                 aux = lambda do |key, cell|
@@ -116,21 +116,21 @@ class Racket
                     end
                 end
                 aux.call(key, cell)
-            end,
-            :begin => lambda do |*args|
+            end],
+            [:begin , lambda do |*args|
                 args[-1] # return last result.
-            end
-        }
+            end]
+        ]
 
         ALGEBRA_OPERATORS.map do |opt|
-            @env[opt] = lambda{ |*operands| operands; operands.inject(opt) }
+            @env.push [opt, lambda{ |*operands| operands; operands.inject(opt) }]
         end
         COMPARISION.map do |opt|
             aux = lambda do |opt|
                 lambda{ |*args| args.each_cons(2).all? {|x, y| x.method(opt).call(y)} }
             end
-            if opt == :'=' then @env[:'='] = aux.(:==)
-            else @env[opt] = aux.(opt)
+            if opt == :'=' then @env.push [:'=' , aux.(:==)]
+            else @env.push [opt , aux.(opt)]
             end
         end
     end
@@ -141,17 +141,16 @@ class Racket
     end
 
     def eval(exp, env=@env)
-        p exp
         def lookup_env(env, var)
             error_no_var = "undefined: %s !" % var
-            val = env[var]
+            var_val = env.assoc var
 
-            if val.nil?
+            if var_val.nil?
                 raise error_no_var
             elsif var_val[1] == UNASSIGNED_VAL
                 raise "the unassigned value should not be access."
             else
-                return val
+                return var_val[1]
             end
         end
 
@@ -164,7 +163,6 @@ class Racket
         elsif exp == UNASSIGNED_VAL
             exp
         elsif exp.is_a? Symbol
-
             lookup_env(env, exp) # look up var and return its value
         elsif exp[0] == :define
             _, var, value_exp = exp
@@ -172,17 +170,18 @@ class Racket
                 # value_exp is the body of the lambda
                 fun_name = var[0]
                 parameter_names = var[1..-1]
-                env[fun_name] = eval([:lambda, parameter_names, value_exp], env)
+                env[0..-1] = env + [[fun_name , eval([:lambda, parameter_names, value_exp], env)]]
             else # variable
                 value = eval( value_exp, env )
-                env[var] = value
+                env[0..-1] = env + [[var , value]]
             end
         elsif exp[0] == :set!
             _, var, new_val_exp = exp
-            if env[var].nil?
+            var_val = env.assoc var
+            if var_val.nil?
                 raise "set! assignment disallowed. undefined: %s !" %  var
             else
-                env[var] = eval( new_val_exp, env )
+                var_val[1] = eval( new_val_exp, env )
             end
         elsif exp[0] == :if
             _, test_exp, then_exp, else_exp = exp
@@ -196,7 +195,7 @@ class Racket
             eval([:letrec, [[var, fun]], var], env)
         elsif exp[0] == :lambda
             _, parameter_names, fun_body = exp
-            Closure.new(parameter_names, fun_body, env.clone)
+            Closure.new(parameter_names, fun_body, env)
             # eval([:closure, false, parameter_names, fun_body], env) # return closure( no function name )
         elsif exp[0] == :let
             _, bindings, body = exp
@@ -220,7 +219,7 @@ class Racket
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
             if operator.is_a? Closure # compounded procedures(user-defined)# extends environment with parameters and their actual arguments applied.
-                env_fn = operator.env.merge Hash[ operator.parameters.zip(operands) ]
+                env_fn = operator.env + operator.parameters.zip(operands)
                 body = operator.body
                 eval(body, env_fn)
             else # primitive operators
