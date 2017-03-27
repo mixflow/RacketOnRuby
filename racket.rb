@@ -64,6 +64,16 @@ class Racket
 
     ALGEBRA_OPERATORS = [:+, :-, :*, :/]
     COMPARISION = [:'=', :<, :>, :<=, :>=]
+    UNASSIGNED_VAL = "*unassigned*"
+
+    class Closure
+        attr_reader :parameters, :body, :env
+        def initialize(parameters, body ,env)
+            @parameters = parameters
+            @body = body
+            @env = env
+        end
+    end
 
     attr_reader :env
     def initialize()
@@ -138,7 +148,7 @@ class Racket
 
             if val.nil?
                 raise error_no_var
-            elsif val == :'*unassigned*'
+            elsif var_val[1] == UNASSIGNED_VAL
                 raise "the unassigned value should not be access."
             else
                 return val
@@ -151,17 +161,18 @@ class Racket
             exp
         elsif exp == :null
             exp
-        elsif exp == :'*unassigend*'
+        elsif exp == UNASSIGNED_VAL
             exp
         elsif exp.is_a? Symbol
 
             lookup_env(env, exp) # look up var and return its value
         elsif exp[0] == :define
             _, var, value_exp = exp
-            if var.is_a? Array # function define
+            if var.is_a? Array # function define. transform lambda
+                # value_exp is the body of the lambda
                 fun_name = var[0]
                 parameter_names = var[1..-1]
-                env[fun_name] = eval([:closure, fun_name, parameter_names, value_exp], env)
+                env[fun_name] = eval([:lambda, parameter_names, value_exp], env)
             else # variable
                 value = eval( value_exp, env )
                 env[var] = value
@@ -183,17 +194,10 @@ class Racket
         elsif exp[0] == :rec
             _, var, fun = exp
             eval([:letrec, [[var, fun]], var], env)
-        elsif exp[0] == :closure
-            _, fun_name, parameter_names, fun_body = exp
-            env_define = env.clone # the environment when the function is defined
-            the_closure = lambda do |*arg_vals|
-                env_with_args = env_define.merge Hash[parameter_names.zip arg_vals]
-                env_with_args[fun_name] = the_closure if fun_name # bind function name in env
-                eval(fun_body, env_with_args)
-            end
         elsif exp[0] == :lambda
             _, parameter_names, fun_body = exp
-            eval([:closure, false, parameter_names, fun_body], env) # return closure( no function name )
+            Closure.new(parameter_names, fun_body, env.clone)
+            # eval([:closure, false, parameter_names, fun_body], env) # return closure( no function name )
         elsif exp[0] == :let
             _, bindings, body = exp
             vars = [];vals = []
@@ -201,7 +205,6 @@ class Racket
                 vars.push(bind[0])
                 vals.push(bind[1])
             end
-            p [[:lambda, vars, body]] + vals
             eval([[:lambda, vars, body]] + vals, env)
         elsif exp[0] == :letrec
             _, bindings, body = exp
@@ -210,13 +213,19 @@ class Racket
                 vars.push(bind[0])
                 val_exprs.push(bind[1]) # no eval now
             end
-            eval([:let, vars.map{|var| [var, :"*unassigned*"]}, # all vars' values are #f temp.
+            eval([:let, vars.map{|var| [var, UNASSIGNED_VAL]}, # all vars' values are #f temp.
                         [:begin].+(vars.map.with_index{|var,idx| [:set!, var, val_exprs[idx]]})
                                .push(body)], env)
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
-            operator.call *operands
+            if operator.is_a? Closure # compounded procedures(user-defined)# extends environment with parameters and their actual arguments applied.
+                env_fn = operator.env.merge Hash[ operator.parameters.zip(operands) ]
+                body = operator.body
+                eval(body, env_fn)
+            else # primitive operators
+                operator.call *operands
+            end
         end
     end
 
