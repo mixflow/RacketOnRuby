@@ -123,7 +123,7 @@ class Racket
         ]
 
         ALGEBRA_OPERATORS.map do |opt|
-            @env.push [opt, lambda{ |*operands| operands; operands.inject(opt) }]
+            @env.push [opt, lambda{ |*operands| operands.inject(opt) }]
         end
         COMPARISION.map do |opt|
             aux = lambda do |opt|
