@@ -170,10 +170,10 @@ class Racket
                 # value_exp is the body of the lambda
                 fun_name = var[0]
                 parameter_names = var[1..-1]
-                env[0..-1] = env + [[fun_name , eval([:lambda, parameter_names, value_exp], env)]]
+                env[0..-1] = [[fun_name , eval([:lambda, parameter_names, value_exp], env)]] + env
             else # variable
                 value = eval( value_exp, env )
-                env[0..-1] = env + [[var , value]]
+                env[0..-1] = [[var , value]] + env
             end
         elsif exp[0] == :set!
             _, var, new_val_exp = exp
@@ -215,8 +215,10 @@ class Racket
         else
             operator = eval(exp[0], env) # first thing of s-expression sequence.
             operands = exp[1..-1].map {|sub_exp| eval(sub_exp, env) } # the rest things of sequence
+
             if operator.is_a? Closure # compounded procedures(user-defined)# extends environment with parameters and their actual arguments applied.
-                env_fn = operator.env + operator.parameters.zip(operands)
+
+                env_fn = operator.parameters.zip(operands) + operator.env
                 body = operator.body
                 eval(body, env_fn)
             else # primitive operators
